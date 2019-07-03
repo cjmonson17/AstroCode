@@ -425,12 +425,20 @@ c_km = c*1e-3 #kilometers/sec
 v1 = 30
 #v2 = 20
 #c = 3e10 # cm/s
-v2 = .0001*c #cm/s [redshift]
+v2 = 40 #cm/s [redshift]
 #v2 = -.0001*c #cm/s [blueshift]
 wave_obsR = (sqrt((1+v1/c_km)/(1-v1/c_km))) # [redshift]
-wave_obsB = (sqrt((1-v1/c_km)/(1+v1/c_km))) # [blueshift]
-print(wave_obsB)
-print(wave_obsR)
+wave_obsR2 = (sqrt((1+v2/c_km)/(1-v2/c_km))) # [redshift]
+
+wave_obsB = (sqrt((1-v2/c_km)/(1+v2/c_km))) # [blueshift]
+print("+++ Doppler shift")
+print(16000 * (wave_obsR -1))
+print(16000 * (wave_obsR2 -1))
+
+#print(wave_obsR -1)
+print(v1/19)
+print(v2/19)
+print("+++")
 
 
 # In[23]: ------------Dopple shifting
@@ -438,6 +446,7 @@ print(wave_obsR)
 
 wavetrim110_obsB = wavetrim110*wave_obsB # [blueshift]
 wavetrim110_obsR = wavetrim110*wave_obsR # [redshift]
+wavetrim110_obsR2 = wavetrim110*wave_obsR2 # [redshift]
 
 #SFE05100trim = StelFluxEarth05100_40[trimA, trimB]
 #PHXwavetrim_R = PHXwavetrim * wave_obsR
@@ -466,17 +475,7 @@ import ccdproc
 #ccd4.write('PHXwave.fits')
 
 
-# ##------------------------ Cross-Correlation Practice
 
-a = [1,2,3,4]
-b = [6,5,90]
-np.correlate(a,b, "full")
-#np.correlate(a,b)
-
-
-#print(np.correlate(wavetrim110, wavetrim110_obsR))
-#˜µœ∑´®††¥¨ˆøπ¬˚∆∑åœ≈Åøπ¬ˆ¨¥©®®´∑œå√©ÍÒ∏Å
-#ßßßßwavetrim110_obsR, wavetrim110))
 
 # ----------------------------- PLOTTING
 
@@ -484,6 +483,7 @@ np.correlate(a,b, "full")
 
 
 # ------plot Synthetic binary with redshift
+'''
 plt.plot(wavetrim110_obsR, reSFE04000_40_med, color = 'lightcoral', label = "5100 K-4.0")
 # plot Synthetic binary with blueshift
 #plt.plot(wavetrim110_obsB, reSFE05100_40_med, color = 'skyblue', label = "5100 K-4.0")
@@ -515,49 +515,67 @@ plt.legend()
 plt.grid()
 plt.show()
 plt.close()
+'''
 
-print("-----------------")
+print("--------Index and Wavelength---------")
 print(wavetrim110[850])
 print(wavetrim110[980])
 print(wavetrim110[1090])
 print("-----------------")
 
 
-r = reSFE03800_25[30:960]
-o = reSFE03800_25[15:945]
-b = reSFE03800_25[0:930]
+#r = reSFE03800_25[30:960]
+#o = reSFE03800_25[15:945]
+#b = reSFE03800_25[0:930]
+x = 850
+y = 1090
+V1i = int(v1/2)
+V2i = int(v2/2)
+A = x+V1i
+B = y+V1i
+#print(A)
+#print(B)
 
-r = reSFE03800_25[880:1120]
-o = reSFE03800_25[865:1105]
-b = reSFE03800_25[850:1090]
-plt.plot(wavetrim110_obsR[880:1120], r, color = 'lightcoral', label = "3800 K-2.5")
-# plot Synthetic binary with blueshift
-#plt.plot(wavetrim110[15:945], reSFE03800_25[15:945], color = 'gray', label = "3800 K-2.5")
+r = reSFE03800_25[A:B]
+o = reSFE03800_25[x:y]
+b = reSFE04800_25[x-V2i:y-V2i]
 
-# Plot actual binary order-110
-plt.plot(wavetrim110_obsB[850:1090], b, color = 'lightblue', label = "4800 K-2.5")
+r2 = reSFE03800_25[885:1125]
 
+#plt.plot(wavetrim110_obsR, reSFE03800_25, color = 'firebrick', label = "3800 K-2.5")
+#plt.plot(wavetrim110, reSFE03800_25, color = 'gray', label = "3800 K-2.5")
+#plt.plot(wavetrim110_obsR2, reSFE03800_25, color = 'blue', label = "3800 K-2.5")
 
-
-plt.plot(wavetrim110[865:1105], (r + b), color = 'purple', label = "4800_2.5 + 3800_2.5")
+#plt.plot(wavetrim110_obsB, reSFE03800_25, color = 'lightcoral', label = "3800 K-2.5")
 
 
+# Plot redshift
+plt.plot(wavetrim110_obsR[x+V1i:y+V1i], r, color = 'lightcoral', label = "3800 K-2.5 (v=30)") #[880:1120] r + 1e-15
+#plt.plot(wavetrim110_obsR2[885:1125], r2 + 1e-15, color = 'lightblue', label = "3800 K-2.5")
 
 
-#plt.plot(wavetrim110_obsB, reSFE04800_25_med - reSFE03800_25_med, color = 'orange')
+
+# Plot blueshift
+plt.plot(wavetrim110_obsB[x-V2i:y-V2i], b, color = 'lightblue', label = "4800 K-2.5 (v=40)")
+
+
+# Plot combination or redshift and blueshift
+plt.plot(wavetrim110[x:y], (r + b), color = 'purple', label = "3800_2.5 + 4800_2.5")
+
+
 plt.xlabel("Wavelength [$\AA$]")
 plt.ylabel("Flux [erg/s/$cm^2$/$\AA$]")
 #plt.annotate('local max', xy=(16330, .6e-12), xytext=(16340, .4e-12),
         #    arrowprops=dict(facecolor='black', shrink=0.05),
         #    )
 #plt.ylabel("Flux [erg/s/$cm^2$/$\AA$]")
-xlim(16325,16350)
+xlim(16325.5,16340)
 #ylim(5e-16,2e-15)
 plt.title("Synthetic spectra and Synthetic binary")
 plt.legend()
 plt.grid()
 
-plt.savefig("SynBin1c.png")
+plt.savefig("SynBinFinal1.png")
 plt.close()
 
 from decimal import Decimal
@@ -576,11 +594,12 @@ def LumDiff(b):
     return Avg
 A = LumDiff(reSFE04800_25)
 B = LumDiff(reSFE03800_25)
+print("-------Difference in Wavelength------")
+#print("reSFE04800_25: %f"%A)
+#print("reSFE03800_25: %f"%B)
+#print("reSFE04800_25 - reSFE03800_25: %f"%A-B)
 print("-------------")
-print(A)
-print(B)
-print(A-B)
-print("-------------")
+'''
 c = Decimal(reSFE04800_25[500])
 d = Decimal(reSFE03800_25[500])
 print(c-d)
@@ -597,7 +616,7 @@ print(g-h)
 #print(len(reSFE03800_15))
 #print(Decimal(StelFluxEarth03800_15[500]))
 #print("Average Luminosity: %d"% (D))
-
+'''
 
 
 #return
