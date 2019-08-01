@@ -1,0 +1,118 @@
+def Synthetic_noise1(secondary_file, IGRINS, SNR, start, end):
+
+    # start and end are the indices that correspond directly to IGRINS
+    # new_start and new_end correspond to a larger wavelength array that encapsulates start and end
+    # big_start and big_end correspind to an even larger wavelengththat encsulates new_start and new_end
+
+    new_start = start - 100
+    new_end = end + 100
+
+    big_start = new_start - 100
+    big_end = new_end + 100
+
+    sec_file = secondary_file[big_start:big_end]  #[start:end:change] # put change back in for cross-correlation
+    #sec_file_fin = sec_file[gi_order]
+
+
+    prim_file = StelFluxEarth05000_35[big_start:big_end]   #[start:end:change]
+    #prim_file = StelFluxEarth05000_35[gi_order]   #[start:end:change]
+
+
+    v1 = 35    # 45 km/s [redshift]
+    v2 = 27   # 37 km/s [redshift]
+
+# shifting wavelengths
+    wave_obsR = (sqrt((1+v1/c_km)/(1-v1/c_km))) # [redshift]
+    wave_obsR2 = (sqrt((1+v2/c_km)/(1-v2/c_km))) # [redshift 2]
+
+# Applying Doppler Shift
+    PHXwave_rs = PHXwave[big_start:big_end]*wave_obsR # 5000  (V = 30)
+    PHXwave_rs2 = PHXwave[big_start:big_end]*wave_obsR2  # (V = 40)
+    PHXwave_new = PHXwave[big_start:big_end]
+
+# Limb darkening (0.0 - 1.0)
+    low_LD = 0.6
+    high_LD = 0.6
+    IG_vsini = 8.0
+
+
+
+
+# Resampling
+
+    SFE_primary = prim_file       #spectres(PHXwave_rs,PHXwave,prim_file) # prim_broad  #
+    #reSFE_primary = pyasl.rotBroad(PHXwave_rs, reSFE_primary, low_LD, IG_vsini)
+    # reSFE_5000 = spectres(wave_file,PHXwave_rs,primary_file)
+    SFE_secondary = sec_file      #spectres(PHXwave_rs2,PHXwave,sec_file) # sec_file_fin   #
+
+# Rotational broadening of primary spectra
+    SFE_prim_broad = pyasl.rotBroad(PHXwave_rs, SFE_primary, low_LD, IG_vsini)
+
+
+# place both spectra onto same wavelength array
+# use np.linspace() to create a new wavelength array to place fluxes on
+# And then, add them together to create the binary
+    #new_start = start - 100
+    #new_end = end + 100
+
+    number = int((new_end - new_start)/2)
+
+# New wavelength array
+    new_PHX_wave = np.linspace(PHXwave[new_start], PHXwave[new_end], num = number) # change number to 3000
+    # or maybe number  = int(number/2)
+    new_PHXwave_rs2 = new_PHX_wave * wave_obsR2
+
+
+# REsample spectra onto new wavelength array
+# Will add the two together to form a binary once they are on the same wavelength
+
+    reSFE_prim_broad = spectres(new_PHX_wave, PHXwave_rs, SFE_prim_broad) # ''''''
+    #reSFE_prim_broad2 = spectres(new_PHX_wave, PHXwave_rs2, SFE_prim_broad)
+    reSFE_sec = spectres(new_PHX_wave, PHXwave_rs2, SFE_secondary)
+
+# Making the SynBin
+    SynBin_flux = reSFE_prim_broad + reSFE_sec
+    #print(SynBin_flux)
+
+    #plt.plot(new_PHX_wave, reSFE_prim_broad, color = "red")
+    #plt.plot(new_PHX_wave, reSFE_prim_broad2, color = "blue")
+    #plt.plot(new_PHX_wave, reSFE_sec, color = "blue")
+    #plt.xlim(16260, 16280)
+    #plt.plot(new_PHX_wave, reSFE_sec, color = "blue")
+    #plt.plot(new_PHX_wave, SynBin_flux, color = "orange")
+    #plt.savefig("test of binary 1")
+
+
+    SynBin_spec = spectres(IGRINS,new_PHX_wave,SynBin_flux)
+
+# adding noise
+    noise = SynBin_spec/SNR
+    #noise_R = reFluxR/SNR
+    #noise_L = reFluxL/SNR
+    #PHXerr = .03 * reFlux
+
+
+# Creating total flux for Synthetic BINA
+# to add noise back in, uncomment np.random...'''
+    Total_flux_SynBin = SynBin_spec + np.random.normal(0, noise, len(SynBin_spec))
+
+
+# Make a pseudo Wavelength
+# this will be placed before we add the spectra together
+
+# Error and Error propagation
+# need to perform an error propagation on the synthetic error
+    error_PHX = 0.03
+    Bin_error = np.sqrt((error_PHX**2) + (error_PHX**2))
+
+# Old wavelength for secondary star (This is the wavelength that is slightly larger than IGRINS)
+    PHXwave_rs2_old = PHXwave[new_start:new_end]*wave_obsR2  # (V = 40)
+    #sec_flux_old = secondary_file[new_start:new_end]
+
+# Finding error: multiply flux by error
+    Total_flux_err = Bin_error * Total_flux_SynBin
+    sec_flux_err = error_PHX * reSFE_sec   # SFE_secondary
+
+
+
+    return Total_flux_SynBin, reSFE_sec, IGRINS, new_PHXwave_rs2, Total_flux_err, sec_flux_err  #    SFE_secondary  PHXwave_rs2  reSFE_sec
